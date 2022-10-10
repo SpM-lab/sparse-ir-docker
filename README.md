@@ -17,3 +17,10 @@ docker run --rm -ti shinaoka/sparse-ir bash
 The Jupyter notebook will be accessible at [http://localhost:8888](http://localhost:8888), where you should pass the token provided on the command line.
 If you want the state of the virtual machine to be stored, drop `--rm` from the commands above.
 A summary of useful docker commands can be found [here](https://www.docker.com/sites/default/files/Docker_CheatSheet_08.09.2016_0.pdf).
+
+If you want to update the image and push it Docker Hub, use the following commands
+
+```
+docker build -t shinaoka/sparse-ir . --no-cache
+docker push shinaoka/sparse-ir
+```
