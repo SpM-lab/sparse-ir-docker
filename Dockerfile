@@ -1,4 +1,4 @@
-FROM julia:1.7.2
+FROM julia:1.9.1
 
 # create user with a home directory
 ARG NB_USER=jovyan
@@ -17,6 +17,8 @@ RUN apt-get update && \
     python3 \
     python3-dev \
     python3-distutils \
+    python3-pip \
+    python3-venv \
     curl \
     ca-certificates \
     git \
@@ -29,7 +31,7 @@ RUN apt-get update && \
     sudo \
     && \
     apt-get clean && rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* # clean up
-RUN curl -kL https://bootstrap.pypa.io/get-pip.py | python3
+#RUN curl -kL https://bootstrap.pypa.io/get-pip.py | python3
 
 # sudo
 RUN echo "%${USER}    ALL=(ALL)   NOPASSWD:    ALL" >> /etc/sudoers.d/${USER} && \
@@ -37,7 +39,10 @@ RUN echo "%${USER}    ALL=(ALL)   NOPASSWD:    ALL" >> /etc/sudoers.d/${USER} &&
 
 USER ${NB_USER}
 
-# Install default Python libraries
+# Install Python libraries
+ENV VIRTUAL_ENV=${HOME}/.venv/default
+RUN python3 -m venv ${VIRTUAL_ENV}
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip3 install \
     jupyter-book \
     jupytext \
@@ -45,11 +50,11 @@ RUN pip3 install \
     xprec \
     matplotlib \
     ghp-import \
-    jupyterlab \
-    --user
+    jupyterlab
 
 # Install default Julia packages
-RUN mkdir -p ${HOME}/.julia/config && \
+RUN . ${HOME}/.venv/default/bin/activate && \
+    mkdir -p ${HOME}/.julia/config && \
     echo '\
     # set environment variables\n\
     ENV["PYTHON"]=Sys.which("python3")\n\
@@ -58,12 +63,13 @@ RUN mkdir -p ${HOME}/.julia/config && \
 RUN julia -e 'using Pkg; Pkg.add(["IJulia", "Plots", "Revise", "FFTW", "Roots", "OMEinsum", "GR", "FastGaussQuadrature", "LaTeXStrings", "SparseIR"])'
 
 RUN echo "export PATH=$HOME/.local/bin:\$PATH" >> ${HOME}/.bashrc
+RUN echo "source ${VIRTUAL_ENV}/bin/activate" >> ${HOME}/.bashrc
 ENV PATH $HOME/.local/bin:$PATH
-#RUN echo 'alias julia="julia --project=@."' >> ${HOME}/.bashrc
 
 WORKDIR /home/$NB_USER
 RUN git clone https://github.com/SpM-lab/sparse-ir-tutorial --branch main --depth 1
 WORKDIR /home/$NB_USER/sparse-ir-tutorial/src
+
 
 EXPOSE 8888
 CMD ["jupyter","lab","--ip","0.0.0.0"]
